@@ -1,0 +1,41 @@
+name: Polymarket Whale Tracker
+
+on:
+  schedule:
+    # Runs at 23:00 UTC every day. Adjust the cron syntax as needed.
+    - cron: '0 23 * * *'
+  workflow_dispatch: # Allows you to trigger it manually from the GitHub UI for testing
+
+jobs:
+  run-tracker:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to commit state.json back to the repo
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: pip install requests google-generativeai #-r requirements.txt
+
+      - name: Run Tracker Script
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          ALERT_RECIPIENT: ${{ secrets.ALERT_RECIPIENT }}
+        run: python src/tracker.py
+
+      - name: Commit State File Update
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add state.json
+          # Only commit if there are changes
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: update tracker state" && git push)
