@@ -20,8 +20,9 @@ async function fetchLiveTrades() {
                 <td><span class="address">${formatAddress(trade.wallet_address)}</span></td>
                 <td>${formatAddress(trade.market_id)}</td>
                 <td class="${sideClass}">${trade.side}</td>
-                <td>${trade.amount}</td>
+                <td>${trade.amount.toFixed(2)}</td>
                 <td>${formatCurrency(trade.price)}</td>
+                <td class="fee-cell">${formatCurrency((trade.amount * trade.price * trade.fee_bps) / 10000)}</td>
             `;
             
             tableBody.appendChild(row);

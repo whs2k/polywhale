@@ -49,9 +49,10 @@ async def simulate_trades():
                 side = random.choice(["BUY", "SELL"])
                 amount = random.uniform(1000, 50000) # Big "Whale" trades
                 price = random.uniform(0.1, 0.9)
+                fee_bps = random.randint(1, 15) # Simulated bps
                 
-                insert_trade(wallet, market["question"], side, amount, price)
-                print(f"[SIM] Trade: {wallet} {side} {amount:.2f} shares on '{market['question'][:30]}...'")
+                insert_trade(wallet, market["question"], side, amount, price, fee_bps)
+                print(f"[SIM] Trade: {wallet} {side} {amount:.2f} shares on '{market['question'][:30]}...' Fee: {fee_bps}bps")
             
             await asyncio.sleep(random.randint(20, 40))
         except Exception as e:
@@ -93,8 +94,10 @@ def handle_real_trade(event):
     size = float(event.get('size', 0))
     side = event.get('side', 'BUY')
     wallet = event.get('maker_address') or "RealWhale_Anon"
-    insert_trade(wallet, asset_id, side, size, price)
-    print(f"[REAL] Trade captured on {asset_id}!")
+    fee_bps = int(event.get('fee_rate_bps', 0))
+    
+    insert_trade(wallet, asset_id, side, size, price, fee_bps)
+    print(f"[REAL] Trade captured on {asset_id} with {fee_bps}bps fee!")
 
 async def main():
     print("PolyWhale tracker starting up...")

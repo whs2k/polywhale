@@ -21,24 +21,32 @@ def init_db():
             market_id TEXT,
             side TEXT,
             amount REAL,
-            price REAL
+            price REAL,
+            fee_bps INTEGER DEFAULT 0
         )
     ''')
     
     # Create an index on wallet_address for faster PnL aggregation
     c.execute('CREATE INDEX IF NOT EXISTS idx_wallet ON trades(wallet_address)')
     
+    # Migration: Add fee_bps if it doesn't exist
+    try:
+        c.execute('ALTER TABLE trades ADD COLUMN fee_bps INTEGER DEFAULT 0')
+    except sqlite3.OperationalError:
+        # Column already exists
+        pass
+    
     conn.commit()
     conn.close()
 
-def insert_trade(wallet_address, market_id, side, amount, price):
+def insert_trade(wallet_address, market_id, side, amount, price, fee_bps=0):
     conn = get_db_connection()
     c = conn.cursor()
     
     c.execute('''
-        INSERT INTO trades (wallet_address, market_id, side, amount, price)
-        VALUES (?, ?, ?, ?, ?)
-    ''', (wallet_address, market_id, side, amount, price))
+        INSERT INTO trades (wallet_address, market_id, side, amount, price, fee_bps)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', (wallet_address, market_id, side, amount, price, fee_bps))
     
     conn.commit()
     conn.close()
@@ -74,7 +82,7 @@ def get_recent_trades(limit=50):
     c = conn.cursor()
     
     c.execute('''
-        SELECT id, timestamp, wallet_address, market_id, side, amount, price
+        SELECT id, timestamp, wallet_address, market_id, side, amount, price, fee_bps
         FROM trades
         ORDER BY timestamp DESC
         LIMIT ?

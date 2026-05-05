@@ -338,6 +338,12 @@ tr:hover {
   font-size: 1.1rem;
 }
 
+.fee-cell {
+  color: var(--accent-cyan);
+  font-weight: 600;
+  font-family: 'Courier New', Courier, monospace;
+}
+
 /* Animations */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
