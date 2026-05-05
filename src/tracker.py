@@ -8,7 +8,7 @@ from database import init_db, insert_trade, get_top_whales
 
 # --- Configuration & Setup ---
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
-WS_URL = "wss://clob.polymarket.com/ws/market"
+WS_URL = "wss://ws-subscriptions-clob.polymarket.com/ws/"
 
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
@@ -33,12 +33,12 @@ async def connect_and_listen():
                 
                 # 2. Subscribe to specific tokens (empty [] doesn't give trades)
                 subscribe_msg = {
-                    "assets_ids": token_ids[:100], # Limit to 100 for stability
+                    "assets_ids": token_ids[:500], # Limit to 500 for better coverage
                     "type": "market",
                     "custom_feature_enabled": True
                 }
                 await websocket.send(json.dumps(subscribe_msg))
-                print(f"Subscribed to {len(token_ids[:100])} active tokens!")
+                print(f"Subscribed to {len(token_ids[:500])} active tokens!")
 
                 # 3. Heartbeat task
                 async def heartbeat():
