@@ -8,7 +8,7 @@ from database import init_db, insert_trade, get_top_whales
 
 # --- Configuration & Setup ---
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
-WS_URL = "wss://ws-subscriptions-clob.polymarket.com/ws/market"
+WS_URL = "wss://clob.polymarket.com/ws/market"
 
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
@@ -74,9 +74,11 @@ async def connect_and_listen():
 
 def handle_trade(event):
     """Parses a trade event and inserts it into the SQLite DB."""
-    print("Parsing trade event:", event)
-    # These fields depend on the exact JSON schema Polymarket returns via WS
-    wallet = event.get('maker_address') or event.get('taker_address') or "UnknownWallet"
+    print("Parsing trade event:", json.dumps(event))
+    # Try all possible fields for wallet address
+    wallet = (event.get('maker_address') or event.get('taker_address') or 
+              event.get('address') or event.get('wallet') or 
+              event.get('owner') or event.get('from') or "UnknownWallet")
     market_id = event.get('asset_id') or "UnknownMarket"
     side = event.get('side', 'BUY')
     
