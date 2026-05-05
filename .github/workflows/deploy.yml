@@ -35,22 +35,3 @@ jobs:
             sudo systemctl daemon-reload
             sudo systemctl restart tracker
             sudo systemctl restart frontend
-
-            echo "--- DIAGNOSTICS ---"
-            sudo systemctl status tracker || true
-            sudo journalctl -u tracker -n 50 --no-pager
-            sudo systemctl status frontend || true
-            sudo journalctl -u frontend -n 50 --no-pager
-            
-            /home/ubuntu/polywhale/venv/bin/python -c "
-import sqlite3
-try:
-    conn = sqlite3.connect('/home/ubuntu/polywhale/src/polywhale.db')
-    cursor = conn.cursor()
-    cursor.execute('SELECT count(*) FROM trades;')
-    print('Trades count in src/polywhale.db:', cursor.fetchone()[0])
-    cursor.execute('SELECT * FROM trades LIMIT 2;')
-    print('Recent trades:', cursor.fetchall())
-except Exception as e:
-    print('Error accessing DB:', e)
-" || true
