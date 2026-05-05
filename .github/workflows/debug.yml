@@ -23,7 +23,15 @@ jobs:
             echo "--- Frontend Logs ---"
             sudo journalctl -u frontend -n 50 --no-pager
             echo "--- Database Status ---"
-            sqlite3 /home/ubuntu/polywhale/polywhale.db "SELECT count(*) FROM trades;" || true
-            sqlite3 /home/ubuntu/polywhale/src/polywhale.db "SELECT count(*) FROM trades;" || true
-            echo "--- Recent Trades ---"
-            sqlite3 /home/ubuntu/polywhale/src/polywhale.db "SELECT * FROM trades ORDER BY timestamp DESC LIMIT 5;" || true
+            /home/ubuntu/polywhale/venv/bin/python -c "
+import sqlite3
+try:
+    conn = sqlite3.connect('/home/ubuntu/polywhale/src/polywhale.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT count(*) FROM trades;')
+    print('Trades count in src/polywhale.db:', cursor.fetchone()[0])
+    cursor.execute('SELECT * FROM trades LIMIT 2;')
+    print('Recent trades:', cursor.fetchall())
+except Exception as e:
+    print('Error accessing DB:', e)
+" || true
