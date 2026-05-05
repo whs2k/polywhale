@@ -49,5 +49,14 @@ def api_live():
         "trades": trades
     })
 
+@app.route("/api/logs")
+def api_logs():
+    import subprocess
+    try:
+        result = subprocess.run(["journalctl", "-u", "tracker", "-n", "100", "--no-pager"], capture_output=True, text=True)
+        return "<pre>" + result.stdout + "\nSTDERR:\n" + result.stderr + "</pre>"
+    except Exception as e:
+        return str(e)
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
