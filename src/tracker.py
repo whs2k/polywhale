@@ -23,14 +23,22 @@ async def connect_and_listen():
             async with websockets.connect(WS_URL) as websocket:
                 print("Connected! Listening for trades...")
                 
-                # Subscribe to all markets using global firehose
+                # Fetch active markets from Gamma API
+                print("Fetching active markets to subscribe...")
+                res = requests.get('https://gamma-api.polymarket.com/events?active=true&limit=20')
+                active_events = res.json()
+                token_ids = []
+                for event in active_events:
+                    for market in event.get('markets', []):
+                        token_ids.extend(market.get('clobTokenIds', []))
+                
                 subscribe_msg = {
-                    "assets_ids": [],
+                    "assets_ids": token_ids,
                     "type": "market",
                     "custom_feature_enabled": True
                 }
                 await websocket.send(json.dumps(subscribe_msg))
-                print("Subscribed to global market firehose!")
+                print(f"Subscribed to {len(token_ids)} active tokens!")
 
                 while True:
                     message = await websocket.recv()
