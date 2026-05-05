@@ -29,7 +29,14 @@ async def connect_and_listen():
                 token_ids = []
                 for event in active_events:
                     for market in event.get('markets', []):
-                        token_ids.extend(market.get('clobTokenIds', []))
+                        ids = market.get('clobTokenIds')
+                        if isinstance(ids, str):
+                            try:
+                                ids = json.loads(ids)
+                            except:
+                                continue
+                        if isinstance(ids, list):
+                            token_ids.extend(ids)
                 
                 # 2. Subscribe to specific tokens
                 subscribe_msg = {
