@@ -23,22 +23,14 @@ async def connect_and_listen():
             async with websockets.connect(WS_URL) as websocket:
                 print("Connected! Listening for trades...")
                 
-                # Fetch active markets from Gamma API
-                print("Fetching active markets to subscribe...")
-                res = requests.get('https://gamma-api.polymarket.com/events?active=true&limit=20')
-                active_events = res.json()
-                token_ids = []
-                for event in active_events:
-                    for market in event.get('markets', []):
-                        token_ids.extend(market.get('clobTokenIds', []))
-                
+                # Subscribe to all markets using global firehose
                 subscribe_msg = {
-                    "assets_ids": token_ids,
+                    "assets_ids": [],
                     "type": "market",
                     "custom_feature_enabled": True
                 }
                 await websocket.send(json.dumps(subscribe_msg))
-                print(f"Subscribed to {len(token_ids)} active tokens!")
+                print("Subscribed to global market firehose!")
 
                 while True:
                     message = await websocket.recv()
@@ -50,12 +42,16 @@ async def connect_and_listen():
                             etype = event.get('event_type')
                             if etype:
                                 print(f"Received event: {etype}")
+                                if etype != 'new_market':
+                                    print("Raw event data:", event)
                             if etype == 'last_trade_price':
                                 handle_trade(event)
                     else:
                         etype = data.get('event_type')
                         if etype:
                             print(f"Received event: {etype}")
+                            if etype != 'new_market':
+                                print("Raw event data:", data)
                         if etype == 'last_trade_price':
                             handle_trade(data)
                         
