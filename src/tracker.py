@@ -53,7 +53,14 @@ async def connect_and_listen():
                 # 4. Message loop
                 while True:
                     message = await websocket.recv()
-                    data = json.loads(message)
+                    if message == "PONG":
+                        continue
+                        
+                    try:
+                        data = json.loads(message)
+                    except json.JSONDecodeError:
+                        print(f"Non-JSON message received: {message}")
+                        continue
                     
                     # Log ALL messages for debugging
                     print(f"WS Msg: {json.dumps(data)[:200]}...") # Print first 200 chars
