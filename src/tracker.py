@@ -8,7 +8,7 @@ from database import init_db, insert_trade, get_top_whales
 
 # --- Configuration & Setup ---
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
-WS_URL = "wss://ws-subscriptions-clob.polymarket.com/ws/"
+WS_URL = "wss://ws-subscriptions-clob.polymarket.com/ws/market"
 
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
@@ -31,20 +31,19 @@ async def connect_and_listen():
                     for market in event.get('markets', []):
                         token_ids.extend(market.get('clobTokenIds', []))
                 
-                # 2. Subscribe to specific tokens (empty [] doesn't give trades)
+                # 2. Subscribe to specific tokens
                 subscribe_msg = {
-                    "assets_ids": token_ids[:500], # Limit to 500 for better coverage
-                    "type": "market",
-                    "custom_feature_enabled": True
+                    "assets_ids": token_ids[:100], 
+                    "type": "market"
                 }
                 await websocket.send(json.dumps(subscribe_msg))
-                print(f"Subscribed to {len(token_ids[:500])} active tokens!")
+                print(f"Subscribed to {len(token_ids[:100])} tokens!")
 
-                # 3. Heartbeat task
+                # 3. Heartbeat task (Use string PING as per some examples)
                 async def heartbeat():
                     while True:
                         try:
-                            await websocket.ping()
+                            await websocket.send("PING")
                             await asyncio.sleep(10)
                         except:
                             break
@@ -86,6 +85,7 @@ def handle_trade(event):
     amount = float(event.get('size', 0))
     price = float(event.get('price', 0))
     
+    print(f"Checking trade: Wallet={wallet}, Amount={amount}, Price={price}")
     if wallet and amount > 0:
         insert_trade(wallet, market_id, side, amount, price)
         print(f"Logged trade: Wallet {wallet[:6]}... bought {amount} shares at {price} on {market_id}")
