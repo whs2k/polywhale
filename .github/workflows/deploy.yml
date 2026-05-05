@@ -26,9 +26,15 @@ jobs:
             # Update .env file
             echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > src/.env
             
+            # Open port 8080 in Ubuntu's internal firewall
+            sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 8080 -j ACCEPT || true
+            sudo netfilter-persistent save || true
+            
             sudo cp infra/tracker.service /etc/systemd/system/
             sudo cp infra/frontend.service /etc/systemd/system/
             sudo systemctl daemon-reload
+            sudo systemctl restart tracker
+            sudo systemctl restart frontend
             
             sudo systemctl restart tracker
             sudo systemctl restart frontend
