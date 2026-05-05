@@ -69,6 +69,22 @@ def get_top_whales(limit=500):
     
     return [dict(w) for w in whales]
 
+def get_recent_trades(limit=50):
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    c.execute('''
+        SELECT id, timestamp, wallet_address, market_id, side, amount, price
+        FROM trades
+        ORDER BY timestamp DESC
+        LIMIT ?
+    ''', (limit,))
+    
+    trades = c.fetchall()
+    conn.close()
+    
+    return [dict(t) for t in trades]
+
 if __name__ == '__main__':
     # Initialize the database if run directly
     init_db()

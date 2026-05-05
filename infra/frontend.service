@@ -4,8 +4,8 @@ After=network.target
 
 [Service]
 User=ubuntu
-WorkingDirectory=/home/ubuntu/polywhale/frontend
-ExecStart=/home/ubuntu/polywhale/venv/bin/python -m http.server 8080
+WorkingDirectory=/home/ubuntu/polywhale
+ExecStart=/home/ubuntu/polywhale/venv/bin/python src/api.py
 Restart=always
 RestartSec=5
 StandardOutput=syslog

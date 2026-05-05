@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PolyWhale | Live Feed</title>
+    <meta name="description" content="Live stream of Polymarket trades tracked by PolyWhale.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <span>🐋</span> PolyWhale
+        </div>
+        <nav>
+            <a href="index.html">Dashboard</a>
+            <a href="live.html" class="active">Live Feed</a>
+            <a href="upcoming.html">Upcoming Bets</a>
+        </nav>
+    </header>
+
+    <main>
+        <h1 class="animate-fade-in delay-1">Live Feed</h1>
+        <p class="subtitle animate-fade-in delay-1">Real-time trades being ingested into the database from Polymarket.</p>
+
+        <section class="table-container animate-fade-in delay-2">
+            <div class="table-header">
+                <h2>Recent Trades</h2>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Wallet</th>
+                        <th>Market ID</th>
+                        <th>Side</th>
+                        <th>Amount</th>
+                        <th>Price</th>
+                    </tr>
+                </thead>
+                <tbody id="live-table-body">
+                    <!-- Data injected via JS -->
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <script src="js/live.js"></script>
+</body>
+</html>
