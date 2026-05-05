@@ -32,18 +32,44 @@ async def connect_and_listen():
                     "57321561048821612594626385532706912750332728571942532289631379312455583992563"  # BTC Down (Examples)
                 ]
                 
-                # 2. Subscribe
-                subscribe_msg = {
-                    "assets_ids": token_ids, 
+                # 2. Try multiple subscription formats for trades
+                # Format A (Standard for market channel)
+                await websocket.send(json.dumps({
+                    "assets_ids": token_ids,
                     "type": "market"
-                }
-                await websocket.send(json.dumps(subscribe_msg))
-                print(f"Subscribed to test tokens: {token_ids}")
+                }))
+                
+                # Format B (Specific for trades if it exists)
+                await websocket.send(json.dumps({
+                    "type": "subscribe",
+                    "channel": "trades",
+                    "asset_ids": token_ids
+                }))
+                
+                # Format C (Another common variant)
+                await websocket.send(json.dumps({
+                    "type": "subscribe",
+                    "topic": "trades",
+                    "asset_ids": token_ids
+                }))
+                
+                print(f"Sent multiple subscription attempts for {len(token_ids)} tokens")
 
+                # 3. Heartbeat task (Use both binary and string)
+                async def heartbeat():
+                    while True:
+                        try:
+                            await websocket.send("PING")
+                            await websocket.ping()
+                            await asyncio.sleep(10)
+                        except:
+                            break
+                
+                asyncio.create_task(heartbeat())
+                        
                 # 4. Message loop
                 while True:
                     message = await websocket.recv()
-                    print(f"RAW MSG: {message}") # Log everything raw
                     if message == "PONG":
                         continue
                         
