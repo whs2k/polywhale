@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PolyWhale | Upcoming Bets</title>
+    <meta name="description" content="Discover upcoming bets recommended by analyzing the activity of top Polymarket whales.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <header>
+        <div class="logo">
+            <span>🐋</span> PolyWhale
+        </div>
+        <nav>
+            <a href="index.html">Dashboard</a>
+            <a href="upcoming.html" class="active">Upcoming Bets</a>
+        </nav>
+    </header>
+
+    <main>
+        <h1 class="animate-fade-in delay-1">Smart Money Recommendations</h1>
+        <p class="subtitle animate-fade-in delay-1">Upcoming bets with the highest conviction from top profitable accounts.</p>
+
+        <section class="bets-grid animate-fade-in delay-2" id="bets-container">
+            <!-- Data injected via JS -->
+        </section>
+    </main>
+
+    <script src="js/mockData.js"></script>
+    <script src="js/upcoming.js"></script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+name: Cold Start Server
+
+on:
+  workflow_dispatch:
+
+jobs:
+  cold-start:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure Server & Services
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            sudo apt update && sudo apt upgrade -y
+            sudo apt install python3-venv python3-pip git -y
+            
+            if [ ! -d "/home/${{ secrets.USERNAME }}/polywhale" ]; then
+              git clone https://github.com/${{ github.repository }}.git /home/${{ secrets.USERNAME }}/polywhale
+            fi
+            
+            cd /home/${{ secrets.USERNAME }}/polywhale
+            python3 -m venv venv
+            source venv/bin/activate
+            pip install -r requirements.txt
+            
+            # Create .env file for the tracker
+            echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > src/.env
+            
+            sudo cp infra/tracker.service /etc/systemd/system/
+            sudo cp infra/frontend.service /etc/systemd/system/
+            sudo systemctl daemon-reload
+            
+            sudo systemctl enable tracker
+            sudo systemctl enable frontend
+            sudo systemctl start tracker
+            sudo systemctl start frontend

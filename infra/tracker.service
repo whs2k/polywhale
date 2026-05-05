@@ -1,0 +1,17 @@
+[Unit]
+Description=PolyWhale WebSocket Tracker
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/polywhale/src
+EnvironmentFile=/home/ubuntu/polywhale/src/.env
+ExecStart=/home/ubuntu/polywhale/venv/bin/python tracker.py
+Restart=always
+RestartSec=5
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=polywhale-tracker
+
+[Install]
+WantedBy=multi-user.target

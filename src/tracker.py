@@ -1,103 +1,102 @@
 import os
 import json
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-import requests
+import asyncio
+import websockets
 import google.generativeai as genai
+from database import init_db, insert_trade, get_top_whales
 
 # --- Configuration & Setup ---
-STATE_FILE = 'state.json'
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
-GMAIL_ADDRESS = os.environ.get('GMAIL_ADDRESS')
-GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD')
-ALERT_RECIPIENT = os.environ.get('ALERT_RECIPIENT')
+WS_URL = "wss://ws-subscriptions-clob.polymarket.com/ws/market"
 
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+    model = genai.GenerativeModel('gemini-1.5-flash')
 
-def load_state():
-    if os.path.exists(STATE_FILE):
-        with open(STATE_FILE, 'r') as f:
-            return json.load(f)
-    return {"last_processed_tx": None, "daily_email_sent": False}
-
-def save_state(state):
-    with open(STATE_FILE, 'w') as f:
-        json.dump(state, f, indent=4)
-
-def fetch_top_whales():
-    # TODO: Implement Polymarket Gamma API call to fetch leaderboard wallets
-    # Example placeholder return:
-    return ["0xWhaleWallet1", "0xWhaleWallet2"]
-
-def fetch_recent_bets(whale_addresses, last_tx):
-    # TODO: Query Polymarket/Polygon for recent transactions by these wallets
-    # Filter out anything older than last_tx to avoid duplicate processing
+async def connect_and_listen():
+    print(f"Connecting to Polymarket WebSocket at {WS_URL}...")
     
-    # Placeholder mock data
-    mock_bets = [
-        {"wallet": "0xWhaleWallet1", "market": "Will interest rates drop?", "side": "Yes", "amount": 50000},
-        {"wallet": "0xWhaleWallet2", "market": "Will the sun rise?", "side": "No", "amount": 1000}
-    ]
-    return mock_bets
+    # Example reconnection loop
+    while True:
+        try:
+            async with websockets.connect(WS_URL) as websocket:
+                print("Connected! Listening for trades...")
+                
+                # Note: Polymarket CLOB requires subscribing to specific markets to get their trades.
+                # Since we want to track whales globally, in a full production system you would 
+                # first fetch all active market IDs from the Gamma API and subscribe to them.
+                # For this MVP, we will send a subscription message format. 
+                # If there's a global firehose, we'd subscribe to that.
+                
+                # Placeholder subscription message (would need real asset_ids in production)
+                subscribe_msg = {
+                    "assets_ids": ["*"], # Some APIs accept wildcard, otherwise provide specific IDs
+                    "type": "market"
+                }
+                # await websocket.send(json.dumps(subscribe_msg))
 
-def analyze_bets_with_gemini(bets):
-    """Uses Gemini to pick the single most important bet of the day."""
-    if not bets:
-        return None
-        
-    prompt = f"""
-    You are a quantitative analyst. Review the following recent trades by highly profitable accounts on Polymarket.
-    Identify the SINGLE most significant bet based on size and market context. 
-    Write a brief, punchy email alert summarizing this bet and why it matters.
-    
-    Trades: {json.dumps(bets)}
-    """
-    
-    response = model.generate_content(prompt)
-    return response.text
+                while True:
+                    message = await websocket.recv()
+                    data = json.loads(message)
+                    
+                    # Example payload parsing (Adjust according to actual Polymarket CLOB schema)
+                    if isinstance(data, list):
+                        for event in data:
+                            if event.get('event_type') == 'last_trade_price':
+                                handle_trade(event)
+                    elif data.get('event_type') == 'last_trade_price':
+                        handle_trade(data)
+                        
+                    # For testing, just print the raw messages if we get any
+                    print("Received data:", data)
+                    
+        except websockets.exceptions.ConnectionClosed as e:
+            print(f"WebSocket closed: {e}. Reconnecting in 5 seconds...")
+            await asyncio.sleep(5)
+        except Exception as e:
+            print(f"Unexpected error: {e}. Reconnecting in 5 seconds...")
+            await asyncio.sleep(5)
 
-def send_email_alert(content):
-    msg = MIMEMultipart()
-    msg['From'] = GMAIL_ADDRESS
-    msg['To'] = ALERT_RECIPIENT
-    msg['Subject'] = "🐋 Smart Money Alert: Polymarket Whale Activity"
-
-    msg.attach(MIMEText(content, 'plain'))
-
-    try:
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.starttls()
-        server.login(GMAIL_ADDRESS, GMAIL_APP_PASSWORD)
-        server.send_message(msg)
-        server.quit()
-        print("Alert sent successfully.")
-    except Exception as e:
-        print(f"Failed to send email: {e}")
-
-def main():
-    state = load_state()
+def handle_trade(event):
+    """Parses a trade event and inserts it into the SQLite DB."""
+    # These fields depend on the exact JSON schema Polymarket returns via WS
+    wallet = event.get('maker_address') or event.get('taker_address') or "UnknownWallet"
+    market_id = event.get('asset_id') or "UnknownMarket"
+    side = event.get('side', 'BUY')
     
-    print("Fetching whale wallets...")
-    whales = fetch_top_whales()
+    # Amount is often in shares or USDC, price is the odds
+    amount = float(event.get('size', 0))
+    price = float(event.get('price', 0))
     
-    print("Scanning for new bets...")
-    recent_bets = fetch_recent_bets(whales, state.get("last_processed_tx"))
+    if wallet and amount > 0:
+        insert_trade(wallet, market_id, side, amount, price)
+        print(f"Logged trade: Wallet {wallet[:6]}... bought {amount} shares at {price} on {market_id}")
+
+def analyze_whales():
+    """ Periodically analyze the database to find the biggest whales. """
+    print("\n--- Current Top Whales (by Volume) ---")
+    whales = get_top_whales(limit=5)
+    for w in whales:
+        print(f"Wallet: {w['wallet_address']} | Trades: {w['trade_count']} | Vol: ${w['total_volume']:.2f}")
+    print("--------------------------------------\n")
+
+async def background_analyzer():
+    while True:
+        await asyncio.sleep(60) # Run every 60 seconds
+        analyze_whales()
+
+async def main():
+    # Ensure database is initialized
+    init_db()
     
-    if recent_bets:
-        print("Analyzing bets with Gemini...")
-        alert_content = analyze_bets_with_gemini(recent_bets)
-        
-        if alert_content:
-            send_email_alert(alert_content)
-            
-            # Update state so we don't alert on these again
-            state["last_processed_tx"] = "UPDATED_TX_HASH" # Replace with actual logic
-            state["daily_email_sent"] = True
-            save_state(state)
-    else:
-        print("No new whale bets found.")
+    # Run the websocket listener and the analyzer concurrently
+    await asyncio.gather(
+        connect_and_listen(),
+        background_analyzer()
+    )
 
 if __name__ == "__main__":
-    main()
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("Stopping PolyWhale tracker...")

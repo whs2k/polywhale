@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PolyWhale | Smart Money Dashboard</title>
+    <meta name="description" content="Track the top 500 profitable accounts on Polymarket and follow the smart money.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <header>
+        <div class="logo">
+            <span>🐋</span> PolyWhale
+        </div>
+        <nav>
+            <a href="index.html" class="active">Dashboard</a>
+            <a href="upcoming.html">Upcoming Bets</a>
+        </nav>
+    </header>
+
+    <main>
+        <h1 class="animate-fade-in delay-1">Market Intel</h1>
+        <p class="subtitle animate-fade-in delay-1">Tracking the top 500 most profitable accounts on Polymarket.</p>
+
+        <section class="stats-grid animate-fade-in delay-2">
+            <div class="stat-card">
+                <div class="stat-title">Aggregate PnL (Top 500)</div>
+                <div class="stat-value" id="stat-total-profit">$0</div>
+                <div class="stat-change positive">+12.4% this month</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Total Active Whales</div>
+                <div class="stat-value" id="stat-active-whales">0</div>
+                <div class="stat-change">Currently tracked</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Avg. Win Rate</div>
+                <div class="stat-value" id="stat-win-rate">0%</div>
+                <div class="stat-change positive">+2.1% vs average</div>
+            </div>
+        </section>
+
+        <section class="table-container animate-fade-in delay-3">
+            <div class="table-header">
+                <h2>Top Profitable Accounts</h2>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Address</th>
+                        <th>Profit (USD)</th>
+                        <th>Win Rate</th>
+                        <th>Total Volume</th>
+                    </tr>
+                </thead>
+                <tbody id="whale-table-body">
+                    <!-- Data injected via JS -->
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <script src="js/mockData.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
