@@ -2,6 +2,7 @@ import os
 import json
 import asyncio
 import websockets
+import requests
 import google.generativeai as genai
 from database import init_db, insert_trade, get_top_whales
 
@@ -22,18 +23,23 @@ async def connect_and_listen():
             async with websockets.connect(WS_URL) as websocket:
                 print("Connected! Listening for trades...")
                 
-                # Note: Polymarket CLOB requires subscribing to specific markets to get their trades.
-                # Since we want to track whales globally, in a full production system you would 
-                # first fetch all active market IDs from the Gamma API and subscribe to them.
-                # For this MVP, we will send a subscription message format. 
-                # If there's a global firehose, we'd subscribe to that.
+                # Fetch active markets from Gamma API
+                print("Fetching active markets to subscribe...")
+                res = requests.get('https://gamma-api.polymarket.com/events?active=true&limit=20')
+                active_events = res.json()
+                token_ids = []
+                for event in active_events:
+                    for market in event.get('markets', []):
+                        token_ids.extend(market.get('clobTokenIds', []))
                 
-                # Placeholder subscription message (would need real asset_ids in production)
+                # We can only subscribe to a limited number at a time or all in one message?
+                # Polymarket CLOB accepts an array of asset_ids
                 subscribe_msg = {
-                    "assets_ids": ["*"], # Some APIs accept wildcard, otherwise provide specific IDs
+                    "assets_ids": token_ids,
                     "type": "market"
                 }
-                # await websocket.send(json.dumps(subscribe_msg))
+                await websocket.send(json.dumps(subscribe_msg))
+                print(f"Subscribed to {len(token_ids)} active tokens!")
 
                 while True:
                     message = await websocket.recv()
