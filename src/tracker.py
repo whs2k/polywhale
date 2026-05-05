@@ -30,7 +30,7 @@ async def connect_and_listen():
                     "custom_feature_enabled": True
                 }
                 await websocket.send(json.dumps(subscribe_msg))
-                print(f"Subscribed to {len(token_ids)} active tokens!")
+                print("Subscribed to global market firehose!")
 
                 while True:
                     message = await websocket.recv()
