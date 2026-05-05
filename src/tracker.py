@@ -23,20 +23,11 @@ async def connect_and_listen():
             async with websockets.connect(WS_URL) as websocket:
                 print("Connected! Listening for trades...")
                 
-                # Fetch active markets from Gamma API
-                print("Fetching active markets to subscribe...")
-                res = requests.get('https://gamma-api.polymarket.com/events?active=true&limit=20')
-                active_events = res.json()
-                token_ids = []
-                for event in active_events:
-                    for market in event.get('markets', []):
-                        token_ids.extend(market.get('clobTokenIds', []))
-                
-                # We can only subscribe to a limited number at a time or all in one message?
-                # Polymarket CLOB accepts an array of asset_ids
+                # Subscribe to all markets using global firehose
                 subscribe_msg = {
-                    "assets_ids": token_ids,
-                    "type": "market"
+                    "assets_ids": [],
+                    "type": "market",
+                    "custom_feature_enabled": True
                 }
                 await websocket.send(json.dumps(subscribe_msg))
                 print(f"Subscribed to {len(token_ids)} active tokens!")
@@ -65,6 +56,7 @@ async def connect_and_listen():
 
 def handle_trade(event):
     """Parses a trade event and inserts it into the SQLite DB."""
+    print("Parsing trade event:", event)
     # These fields depend on the exact JSON schema Polymarket returns via WS
     wallet = event.get('maker_address') or event.get('taker_address') or "UnknownWallet"
     market_id = event.get('asset_id') or "UnknownMarket"
