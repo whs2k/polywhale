@@ -49,41 +49,29 @@ async def connect_and_listen():
                 # Subscription message
                 sub_msg = {
                     "type": "market",
-                    "assets_ids": tokens,
-                    "custom_feature_enabled": True
+                    "assets_ids": tokens
                 }
                 await websocket.send(json.dumps(sub_msg))
-                print("Subscribed! Waiting for events...")
+                print(f"Subscribed to {len(tokens)} tokens! Waiting for events...")
 
-                while True:
+                async for message in websocket:
+                    if message == "PONG": continue
+                    
                     try:
-                        message = await websocket.recv()
-                        if not message: continue
-                        
-                        # Polymarket sometimes sends plain strings or heartbeats
-                        if message == "PONG": continue
-                        
-                        try:
-                            data = json.loads(message)
-                        except:
-                            if "INVALID" not in message:
-                                print(f"Raw Msg: {message}")
-                            continue
+                        data = json.loads(message)
+                    except:
+                        continue
 
-                        # Handle both single events and lists
-                        events = data if isinstance(data, list) else [data]
-                        for event in events:
-                            etype = event.get('event_type')
-                            if etype == 'last_trade_price':
-                                handle_trade(event)
-                            elif etype and etype != 'new_market':
-                                # Log other interesting events like price_change occasionally
-                                if time.time() % 60 < 1: # Log once a minute
-                                    print(f"Periodic log ({etype}): {json.dumps(event)[:100]}...")
-
-                    except websockets.exceptions.ConnectionClosed:
-                        print("WebSocket closed. Reconnecting...")
-                        break
+                    # Handle both single events and lists
+                    events = data if isinstance(data, list) else [data]
+                    for event in events:
+                        etype = event.get('event_type')
+                        if etype == 'last_trade_price':
+                            handle_trade(event)
+                        else:
+                            # Log first 5 events to confirm we are getting data
+                            if 'new_market' not in str(event):
+                                print(f"Received ({etype}): {json.dumps(event)[:200]}")
         except Exception as e:
             print(f"Tracker error: {e}. Reconnecting in 5s...")
             await asyncio.sleep(5)
