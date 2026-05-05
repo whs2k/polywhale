@@ -36,16 +36,23 @@ async def connect_and_listen():
                     message = await websocket.recv()
                     data = json.loads(message)
                     
-                    # Example payload parsing (Adjust according to actual Polymarket CLOB schema)
+                    # Log event types for debugging
                     if isinstance(data, list):
                         for event in data:
-                            if event.get('event_type') == 'last_trade_price':
+                            etype = event.get('event_type')
+                            if etype:
+                                print(f"Received event: {etype}")
+                            if etype == 'last_trade_price':
                                 handle_trade(event)
-                    elif data.get('event_type') == 'last_trade_price':
-                        handle_trade(data)
+                    else:
+                        etype = data.get('event_type')
+                        if etype:
+                            print(f"Received event: {etype}")
+                        if etype == 'last_trade_price':
+                            handle_trade(data)
                         
                     # For testing, just print the raw messages if we get any
-                    print("Received data:", data)
+                    # print("Received data:", data)
                     
         except websockets.exceptions.ConnectionClosed as e:
             print(f"WebSocket closed: {e}. Reconnecting in 5 seconds...")
