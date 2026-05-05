@@ -9,6 +9,7 @@ EnvironmentFile=/home/ubuntu/polywhale/src/.env
 ExecStart=/home/ubuntu/polywhale/venv/bin/python tracker.py
 Restart=always
 RestartSec=5
+Environment=PYTHONUNBUFFERED=1
 StandardOutput=syslog
 StandardError=syslog
 SyslogIdentifier=polywhale-tracker

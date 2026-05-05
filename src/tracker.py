@@ -92,6 +92,7 @@ async def background_analyzer():
         analyze_whales()
 
 async def main():
+    print("PolyWhale tracker starting up...")
     # Ensure database is initialized
     init_db()
     

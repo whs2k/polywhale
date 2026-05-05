@@ -53,8 +53,9 @@ def api_live():
 def api_logs():
     import subprocess
     try:
-        result = subprocess.run(["journalctl", "-u", "tracker", "-n", "100", "--no-pager"], capture_output=True, text=True)
-        return "<pre>" + result.stdout + "\nSTDERR:\n" + result.stderr + "</pre>"
+        tracker_status = subprocess.run(["systemctl", "status", "tracker"], capture_output=True, text=True).stdout
+        tracker_logs = subprocess.run(["journalctl", "-u", "tracker", "-n", "200", "--no-pager"], capture_output=True, text=True).stdout
+        return f"<h3>Tracker Status</h3><pre>{tracker_status}</pre><h3>Tracker Logs</h3><pre>{tracker_logs}</pre>"
     except Exception as e:
         return str(e)
 
