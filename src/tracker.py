@@ -17,52 +17,61 @@ if GEMINI_API_KEY:
 async def connect_and_listen():
     print(f"Connecting to Polymarket WebSocket at {WS_URL}...")
     
-    # Example reconnection loop
     while True:
         try:
             async with websockets.connect(WS_URL) as websocket:
                 print("Connected! Listening for trades...")
                 
-                # Subscribe to all markets using global firehose
+                # 1. Fetch active markets from Gamma API
+                print("Fetching active markets...")
+                res = requests.get('https://gamma-api.polymarket.com/events?active=true&limit=50')
+                active_events = res.json()
+                token_ids = []
+                for event in active_events:
+                    for market in event.get('markets', []):
+                        token_ids.extend(market.get('clobTokenIds', []))
+                
+                # 2. Subscribe to specific tokens (empty [] doesn't give trades)
                 subscribe_msg = {
-                    "assets_ids": [],
+                    "assets_ids": token_ids[:100], # Limit to 100 for stability
                     "type": "market",
                     "custom_feature_enabled": True
                 }
                 await websocket.send(json.dumps(subscribe_msg))
-                print("Subscribed to global market firehose!")
+                print(f"Subscribed to {len(token_ids[:100])} active tokens!")
 
+                # 3. Heartbeat task
+                async def heartbeat():
+                    while True:
+                        try:
+                            await websocket.ping()
+                            await asyncio.sleep(10)
+                        except:
+                            break
+                
+                asyncio.create_task(heartbeat())
+
+                # 4. Message loop
                 while True:
                     message = await websocket.recv()
                     data = json.loads(message)
                     
-                    # Log event types for debugging
                     if isinstance(data, list):
                         for event in data:
                             etype = event.get('event_type')
-                            if etype:
-                                print(f"Received event: {etype}")
-                                if etype != 'new_market':
-                                    print("Raw event data:", event)
+                            if etype and etype != 'new_market':
+                                print(f"Received {etype}: {json.dumps(event)}")
                             if etype == 'last_trade_price':
                                 handle_trade(event)
                     else:
                         etype = data.get('event_type')
-                        if etype:
-                            print(f"Received event: {etype}")
-                            if etype != 'new_market':
-                                print("Raw event data:", data)
+                        if etype and etype != 'new_market':
+                            print(f"Received {etype}: {json.dumps(data)}")
                         if etype == 'last_trade_price':
                             handle_trade(data)
                         
-                    # For testing, just print the raw messages if we get any
-                    # print("Received data:", data)
-                    
-        except websockets.exceptions.ConnectionClosed as e:
-            print(f"WebSocket closed: {e}. Reconnecting in 5 seconds...")
-            await asyncio.sleep(5)
         except Exception as e:
-            print(f"Unexpected error: {e}. Reconnecting in 5 seconds...")
+            print(f"Connection error: {e}. Reconnecting in 5 seconds...")
             await asyncio.sleep(5)
 
 def handle_trade(event):
