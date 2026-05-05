@@ -1,0 +1,29 @@
+name: Debug Server
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Diagnostics
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "--- Tracker Status ---"
+            sudo systemctl status tracker || true
+            echo "--- Tracker Logs ---"
+            sudo journalctl -u tracker -n 50 --no-pager
+            echo "--- Frontend Status ---"
+            sudo systemctl status frontend || true
+            echo "--- Frontend Logs ---"
+            sudo journalctl -u frontend -n 50 --no-pager
+            echo "--- Database Status ---"
+            sqlite3 /home/ubuntu/polywhale/polywhale.db "SELECT count(*) FROM trades;" || true
+            sqlite3 /home/ubuntu/polywhale/src/polywhale.db "SELECT count(*) FROM trades;" || true
+            echo "--- Recent Trades ---"
+            sqlite3 /home/ubuntu/polywhale/src/polywhale.db "SELECT * FROM trades ORDER BY timestamp DESC LIMIT 5;" || true
