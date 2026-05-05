@@ -26,40 +26,24 @@ async def connect_and_listen():
                 print("Fetching active markets...")
                 res = requests.get('https://gamma-api.polymarket.com/events?active=true&limit=50')
                 active_events = res.json()
-                token_ids = []
-                for event in active_events:
-                    for market in event.get('markets', []):
-                        ids = market.get('clobTokenIds')
-                        if isinstance(ids, str):
-                            try:
-                                ids = json.loads(ids)
-                            except:
-                                continue
-                        if isinstance(ids, list):
-                            token_ids.extend(ids)
+                # Hardcoded active tokens for testing (BTC Up/Down)
+                token_ids = [
+                    "68178860044558509376672322612710178351545648802953282218000455850937667232261", # BTC Up
+                    "57321561048821612594626385532706912750332728571942532289631379312455583992563"  # BTC Down (Examples)
+                ]
                 
-                # 2. Subscribe to specific tokens
+                # 2. Subscribe
                 subscribe_msg = {
-                    "assets_ids": token_ids[:100], 
+                    "assets_ids": token_ids, 
                     "type": "market"
                 }
                 await websocket.send(json.dumps(subscribe_msg))
-                print(f"Subscribed to {len(token_ids[:100])} tokens!")
-
-                # 3. Heartbeat task (Use string PING as per some examples)
-                async def heartbeat():
-                    while True:
-                        try:
-                            await websocket.send("PING")
-                            await asyncio.sleep(10)
-                        except:
-                            break
-                
-                asyncio.create_task(heartbeat())
+                print(f"Subscribed to test tokens: {token_ids}")
 
                 # 4. Message loop
                 while True:
                     message = await websocket.recv()
+                    print(f"RAW MSG: {message}") # Log everything raw
                     if message == "PONG":
                         continue
                         
