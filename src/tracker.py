@@ -56,19 +56,17 @@ async def connect_and_listen():
                     message = await websocket.recv()
                     data = json.loads(message)
                     
-                    if isinstance(data, list):
-                        for event in data:
-                            etype = event.get('event_type')
-                            if etype and etype != 'new_market':
-                                print(f"Received {etype}: {json.dumps(event)}")
-                            if etype == 'last_trade_price':
-                                handle_trade(event)
-                    else:
-                        etype = data.get('event_type')
-                        if etype and etype != 'new_market':
-                            print(f"Received {etype}: {json.dumps(data)}")
-                        if etype == 'last_trade_price':
-                            handle_trade(data)
+                    # Log ALL messages for debugging
+                    print(f"WS Msg: {json.dumps(data)[:200]}...") # Print first 200 chars
+
+                    events = data if isinstance(data, list) else [data]
+                    for event in events:
+                        etype = event.get('event_type') or event.get('type')
+                        if etype == 'last_trade_price' or etype == 'trade':
+                            handle_trade(event)
+                        elif etype == 'price_change':
+                            # Maybe we can extract trade info from price changes if needed
+                            pass
                         
         except Exception as e:
             print(f"Connection error: {e}. Reconnecting in 5 seconds...")
