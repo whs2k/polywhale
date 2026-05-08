@@ -9,8 +9,6 @@ ExecStart=/home/ubuntu/polywhale/venv/bin/python src/api.py
 Restart=always
 RestartSec=5
 Environment=PYTHONUNBUFFERED=1
-AmbientCapabilities=CAP_NET_BIND_SERVICE
-CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 StandardOutput=syslog
 StandardError=syslog
 SyslogIdentifier=polywhale-frontend
